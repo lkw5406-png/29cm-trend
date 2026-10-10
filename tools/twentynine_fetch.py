@@ -95,10 +95,11 @@ def parse_product(item: dict) -> dict:
 
 
 def record_update(period: str, date: str, gender: str, top_ids: list[str]) -> None:
-    """받은 시각 + 전체 랭킹 상위 10개 상품번호. 같은 날 여러 번 받은 기록을 비교해 갱신 시각을 추정한다."""
+    """받은 시각 + 전체 랭킹 상위 20개 상품번호. 같은 날 여러 번 받은 기록을 비교해 갱신 시각을 추정한다.
+    (칸 이름은 처음 만든 대로 top10)"""
     log = json.loads(UPDATES_PATH.read_text(encoding="utf-8")) if UPDATES_PATH.exists() else {}
     entries = log.setdefault(period, {}).setdefault(date, {}).setdefault(gender, [])
-    entries.append({"fetched_at": datetime.now(KST).strftime("%Y-%m-%d %H:%M"), "top10": ",".join(top_ids[:10])})
+    entries.append({"fetched_at": datetime.now(KST).strftime("%Y-%m-%d %H:%M"), "top10": ",".join(top_ids[:20])})
     UPDATES_PATH.parent.mkdir(parents=True, exist_ok=True)
     UPDATES_PATH.write_text(json.dumps(log, ensure_ascii=False, indent=1, sort_keys=True), encoding="utf-8")
 
@@ -169,18 +170,43 @@ def save_csv(rows: list[dict], date: str, period: str = "daily"):
     return path
 
 
-def probe_update(date: str) -> None:
-    """재확인 실행(낮 12시·밤 8시)용: 일간 전체 랭킹 상위만 한 번 더 받아 갱신 시각 추정 기록을 남긴다 (성별당 요청 1번)."""
-    for gender in GENDERS:
-        overall = fetch_list(GENDER_CATEGORY[gender], "daily")
-        record_update("daily", date, gender, [str(x.get("itemNo")) for x in overall])
+def probe_update(date: str, periods: tuple[str, ...] = ("daily",)) -> None:
+    """갱신 시각 관찰용: 전체 랭킹 상위만 받아 기록을 남긴다 (기간 × 성별마다 요청 1번, CSV는 건드리지 않음)."""
+    for period in periods:
+        for gender in GENDERS:
+            overall = fetch_list(GENDER_CATEGORY[gender], period)
+            record_update(period, date, gender, [str(x.get("itemNo")) for x in overall])
+
+
+def update_report() -> None:
+    """ranking_updates.json을 읽어 상위 20개가 바뀐 시각을 보여 준다 (갱신 시각 추정)."""
+    log = json.loads(UPDATES_PATH.read_text(encoding="utf-8")) if UPDATES_PATH.exists() else {}
+    for period, days in log.items():
+        for gender in GENDERS:
+            entries = sorted((e for day in days.values() for e in day.get(gender, [])), key=lambda e: e["fetched_at"])
+            print(f"[{PERIODS[period][1]} · {GENDERS[gender]}] 기록 {len(entries)}번")
+            for prev, cur in zip(entries, entries[1:]):
+                a, b = prev["top10"].split(","), cur["top10"].split(",")
+                n = min(len(a), len(b))
+                moved = sum(1 for x, y in zip(a[:n], b[:n]) if x != y)
+                if moved:
+                    print(f"  {prev['fetched_at']} → {cur['fetched_at']}: 상위 {n}개 중 {moved}자리 바뀜")
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--date", default=today_kst())
     parser.add_argument("--period", choices=list(PERIODS), default="daily")
+    parser.add_argument("--probe", action="store_true", help="갱신 시각 관찰: 세 기간 상위만 기록 (요청 6번)")
+    parser.add_argument("--updates", action="store_true", help="관찰 기록에서 순위가 바뀐 시각 보기 (요청 없음)")
     args = parser.parse_args()
+    if args.updates:
+        update_report()
+        return 0
+    if args.probe:
+        probe_update(args.date, tuple(PERIODS))
+        print("갱신 시각 관찰 기록 완료")
+        return 0
 
     print(f"29CM 랭킹 수집 시작 ({args.date}, {PERIODS[args.period][2]} · 성별 의류 전체 TOP 100 + 종류별 TOP 100)")
     rows = collect(args.date, args.period)
