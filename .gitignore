@@ -1,0 +1,18 @@
+# 비밀 정보 — 절대 공유되면 안 됨
+.env
+credentials.json
+token.json
+
+# 이 컴퓨터 전용 설정
+.claude/settings.local.json
+.vscode/
+
+# 임시 작업 공간
+.tmp/*
+!.tmp/.gitkeep
+
+# 파이썬
+__pycache__/
+*.pyc
+.venv/
+venv/
