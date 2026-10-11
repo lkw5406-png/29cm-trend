@@ -39,7 +39,7 @@
 |---|---|---|
 | 1. 랭킹 수집 (기간마다 요청 12번) | `tools/twentynine_fetch.py --period` | 일간 `data/history/`, 주간 `data/history_weekly/`, 월간 `data/history_monthly/` 아래 `YYYY-MM-DD.csv` |
 | 2. 상세정보 (상품 페이지에서, 10초 간격·새 상품 전부) | `tools/product_details.py` | `data/product_details.json` |
-| 2-2. 후기 요약 (**지금 꺼져 있음**) | `tools/review_summary.py` | `data/review_summaries.json` |
+| 2-2. 후기 요약 (종류별 인기 TOP 30, 7일에 한 번, 하루 최대 120개) | `tools/review_summary.py` | `data/review_summaries.json` |
 | 3. 분석 | `tools/analyze_trends.py --period` (분류: `tools/classify_attributes.py` + `tools/attribute_keywords.json`) | `.tmp/analysis_YYYY-MM-DD.json` |
 | 3-2. 순위 급상승 원인 (Claude 조사) | `tools/rise_reasons.py` + `tools/web_research.py` | `data/rise_reasons.json` |
 | 4. 리포트 | `tools/build_report.py --period` | `docs/`(일간), `docs/weekly/`, `docs/monthly/` |
@@ -69,14 +69,51 @@
 - 후기 요약 대상은 종류별 TOP 30(약 300개. 종류가 10개라 50개씩이면 요청이 두 배).
 - 사진은 화면용으로 줄인 주소(`?width=400`), 판독용은 `?width=600`.
 
-## 사진 판독 · 순위 급상승 원인 조사 (Claude 루틴)
-방법은 무신사 매뉴얼(`Desktop/무신사 랭킹/workflows/musinsa_daily_report.md`의 '사진 판독', '순위 급상승 원인 조사', '조사 방법')과 같음.
-도구 이름·옵션도 같음(`photo_queue.py --check/--next/--merge`, `rise_reasons.py --check/--next/--merge`, `web_research.py`).
-- 원인 종류 중 '무신사 노출'만 '29CM 노출'로 바뀜.
-- 첫날 사진 판독 대상: 994개 상품 / 빈칸 3,427칸 (상세정보가 꺼져 있어 많음). 한 번 실행 150개 제한이면 약 일주일.
+## 사진 판독 (매일 자동, Claude 루틴)
+'디자인 참고' 탭의 아이템 카드·대분류별 순위에 들어가는데 상품명·상세정보로 못 채운 칸을 **Claude가 대표 사진을 보고** 채움.
+이미 판독한 칸은 다시 안 봄 → 매일 새로 들어온 상품·새로 필요해진 칸만.
+- **자동**: Claude 예약 실행(루틴) 매일 KST 09:37 (06:10 GitHub 수집·리포트가 끝난 뒤). 관리: https://claude.ai/code/routines
+- 순서:
+  1. `git pull --rebase`
+  2. `python3 tools/photo_queue.py --check` → 오늘 남은 개수
+  3. `python3 tools/photo_queue.py --next --size 27` → `.tmp/photo_queue.json` + 9장씩 묶은 판독용 이미지 `.tmp/photo_sheet_N.jpg` (Pillow 필요: 클라우드는 `python3 -m pip install pillow`, PC는 `uv run --with pillow python …`. 없으면 `.tmp/photos/`의 사진을 하나씩 봄)
+  4. 사진을 보고 `.tmp/photo_batchN.json` 작성 `{"상품번호": {"detail": ["포켓/유틸리티"], "fit": ["루즈"]}}` — **빈 칸(blanks)으로 나온 그룹만**, 이름은 `tools/attribute_keywords.json` 이름표만.
+     - 핏·실루엣·디테일·컬러·원단은 파악률 100%를 위해 **반드시 하나는 고름**. 디테일이 없으면 `무지/베이직`, 상의·아우터 기장이 평범하면 `레귤러 기장`(짧으면 `크롭`, 하프 코트는 `미디 기장`).
+     - **소재(fiber)는 `[]`** — 사진으로는 섬유를 알 수 없어 추정하지 않음(2026-10-11 사장님과 정리: 소재는 상품 페이지의 '제품 소재'로만 채움). `[]`는 '봤지만 모름'으로 기록돼 다시 고르지 않고, 나중에 상세정보가 들어오면 그 값이 우선.
+  5. `python3 tools/photo_queue.py --merge .tmp/photo_batchN.json` (이름표 밖이면 거부 → 고쳐서 다시)
+  6. 3~5 반복 (한 번 실행에 최대 150개, 순위 높은 순. 넘치면 다음 날 이어서)
+  7. 리포트 다시 만들기: `python3 -c "import sys; sys.path.insert(0,'tools'); import run_daily as r; [r.build_period('D', p) for p in r.report_periods('D')]"` (D = 날짜)
+  8. `git add data/photo_labels.json data/rise_reasons.json docs` → 커밋 → `git pull --rebase` → `git push`
+- 사진은 `.tmp/`에만 (커밋하지 않음). 29CM 이미지 서버(`img.29cm.co.kr`, `?width=600`)에서 상품 대표 사진 1장씩, 정직한 User-Agent.
+- 첫날(2026-10-11) 쌓인 것: 994개 상품 / 빈칸 3,427칸 (상세정보가 들어오기 전 기준). 하루 150개면 약 일주일.
+
+## 순위 급상승 원인 조사 (매일, Claude 루틴 — 사진 판독에 이어서)
+'시장 동향'의 '순위가 크게 오른 상품'(성별마다 최대 10개)마다 **왜 올랐는지, 유입이 어디서 왔는지**를 웹·유튜브·SNS·커뮤니티로 깊게 조사해 적는다.
+유료 API 없이 Claude가 직접. 순위 변화는 같은 종류 안 순위(1~100)끼리 비교한 것.
+- 순서:
+  1. `python3 tools/rise_reasons.py --check` → 오늘 리포트 기간별 조사할 개수 (일간 매일, 주간 월요일, 월간 1일)
+  2. `python3 tools/rise_reasons.py --next --period daily` → `.tmp/rise_queue.json` + 상품별 **데이터 단서**(가격·할인율 변화, 사진을 올린 달, 같은 브랜드 동반 상승, 좋아요·후기 수)
+  3. 상품마다 조사(아래 '조사 방법') → `.tmp/rise_batch.json` 작성
+     `{"상품번호": {"causes": ["유튜브·SNS 콘텐츠"], "summary": "…", "confidence": "확인", "reason": "…", "sources": [{"title": "…", "url": "https://…"}]}}`
+  4. `python3 tools/rise_reasons.py --merge .tmp/rise_batch.json --period daily` (형식이 틀리면 거부 → 고쳐서 다시)
+  5. 주간·월간 리포트 날이면 `--period weekly` / `monthly`로 2~4 반복
+- 원인 종류(`causes`, 1~3개, 큰 것 먼저): 셀럽·인플루언서 착용 / 유튜브·SNS 콘텐츠 / 신상품·리뉴얼 출시 / 협업·한정판 / 할인·프로모션 / 29CM 노출 / 브랜드 화제 / 시즌·날씨
+- **확인** = 출처에서 이 상품(또는 같은 모델의 다른 색)이 직접 소개·언급된 걸 봤을 때만. 출처 1개 이상 필수.
+  **추정** = 직접 증거를 못 찾음 → 설명 첫머리에 "이 상품을 직접 소개한 콘텐츠는 못 찾음"처럼 밝히고 정황(브랜드 노출·할인·시즌)으로 판단. 억지로 원인을 만들지 않음.
+- 설명(`reason`)엔 날짜·조회수 같은 숫자를 넣어 "언제, 어디서, 얼마나"가 보이게. 출처는 **직접 열어 본 페이지만**.
+- 한 줄 원인(`summary`, 30자 이내)은 '오늘 요약'에 그대로 나감 → 원인 종류 이름을 반복하지 말고 구체적으로. 계기를 못 찾았으면 "뚜렷한 계기 없음 · 가을 이너 수요"처럼 솔직하게.
+
+### 조사 방법 (무신사 리포트에서 효과 있던 순서를 29CM에 맞춤)
+1. **먼저 그 기간의 판 전체**: 29CM 행사(뉴스 검색 "29CM ○월 세일/이구위크/기획전"), 날씨, 명절. 상품명 앞의 `[72H 특가]`, `[○○ PICK]`, `[29CM 단독]`, `[N차 리오더]` 같은 표시가 그대로 단서(특가·인플루언서 픽·재입고).
+2. **유튜브**: `python3 tools/web_research.py search "브랜드 상품 핵심어" --recent` → 최근 영상 목록 → `python3 tools/web_research.py video 영상ID 브랜드명 상품핵심어`로 설명란·고정 댓글에 이 상품이 있는지 확인. 유튜버 채널은 핸들 대신 그 사람 영상을 `video`로 열어 나온 채널 번호(UC…)로 `channel` 조회.
+3. **상품명에 사람·협업 표시**(`[은현 PICK]`, `[튜드먼트 X 곰송이]`)가 있으면 그 사람 채널·인스타부터.
+4. **웹 검색**(WebSearch): "브랜드 상품명 착용", "브랜드 재입고/신상", 셀럽 이름. 브랜드 공식몰 상품 페이지에 '○○ 착용' 표기가 있는 경우가 많음.
+5. **커뮤니티**: 어미새 패션정보 `https://eomisae.co.kr/os`(최신 20개만 보임), 에펨코리아 핫딜.
+- 여성 쪽은 인스타그램 유입이 많은데 인스타그램은 로그인 없이 못 읽음 → 확인 못 한 걸로 처리(추정).
+- `www.29cm.co.kr`의 상품 페이지는 조사하면서 따로 열지 않음(상세정보 수집이 하루 한 번 이미 읽음). 검색 결과에 나온 제목만 참고.
+- 유튜브 공식 API 하루 한도: 검색 1번 = 100(하루 약 100번). **무신사 루틴과 같은 키를 나눠 씀** → 상품당 검색 1~2회로 아끼고, 한도를 넘으면 `web_research.py`가 웹페이지 읽기로 자동 전환(그 사실을 보고에 적기).
 - 급상승 원인은 둘째 날부터(비교할 어제 기록이 필요).
-- **루틴은 아직 만들지 않음** (저장소가 생긴 뒤 만들기. 예비 예약은 무신사 09:07과 겹치지 않게 09:37 KST).
-- PC에서 원인 조사를 돌리려면 `~/.secrets/29cm-trend.env`에 `YOUTUBE_API_KEY` (무신사 리포트와 같은 키를 써도 됨).
+- PC에서 돌리려면 `~/.secrets/29cm-trend.env`에 `YOUTUBE_API_KEY` (무신사 리포트와 같은 키를 써도 됨). 클라우드 루틴은 환경(Default)의 API 자격 증명이 붙여 줌.
 
 ## 데이터 주소 (2026-10-11 확인)
 - 랭킹: `https://recommend-api.29cm.co.kr/api/v4/best/items?categoryList={카테고리}&periodSort={ONE_DAY|ONE_WEEK|ONE_MONTH}&limit=100&offset=0`
@@ -92,7 +129,7 @@
 - 저장소: https://github.com/lkw5406-png/29cm-trend (공개) — 사장님이 GitHub에서 만들어 주셔야 함
 - **리포트 고정 링크: https://lkw5406-png.github.io/29cm-trend/**
 - GitHub Pages: Settings → Pages → Branch `main` / 폴더 `/docs`
-- 루틴을 만든 뒤: GitHub Secrets `CLAUDE_ROUTINE_URL`, `CLAUDE_ROUTINE_TOKEN` (없으면 `daily.yml` 마지막 단계는 건너뛰고 루틴 예비 예약에 돎)
+- (선택) 수집 직후 루틴을 바로 시작하려면: 루틴 편집 → API 트리거에서 주소·토큰 발급 → GitHub Secrets `CLAUDE_ROUTINE_URL`, `CLAUDE_ROUTINE_TOKEN`. 없으면 `daily.yml` 마지막 단계는 건너뛰고 루틴의 09:37 예약에 돎
 
 ## 수집 원칙 (바꾸지 말 것)
 - 정직한 User-Agent(`TwentyNineCmTrendReport/...`)로 요청. 사람 흉내·봇 위장 금지.
@@ -114,3 +151,4 @@
 - 2026-10-11: 윈도우 Git Bash의 `<<'EOF'` 안에 따옴표가 섞인 긴 파이썬 코드를 넣으면 깨짐 → 수정 스크립트는 파일로 써서 실행(무신사 매뉴얼에도 같은 메모).
 - 2026-10-11: Edge 헤드리스 캡처에서 사진 일부가 깨진 그림으로 찍힘 — 같은 주소를 직접 받으면 200(정상). 캡처가 사진을 다 받기 전에 찍힌 것. 화면 구성 확인용으로만 볼 것.
 - 2026-10-11 낮: GitHub 서버에서도 랭킹 수집·상세정보(상품 페이지) 모두 거부 없이 됨(06:25 본 실행, 12:25 재확인, 매시 관찰 7번 성공). 상세정보 221개까지 거부 0번 → 사장님 결정으로 하루 100개 한도를 없앰(`product_details.DAILY_LIMIT = 0`, 간격 10초 유지). GitHub 예약 실행은 15분쯤 늦게 시작함(06:10 예약 → 06:25).
+- 2026-10-11 낮: 사장님 결정으로 후기 요약을 켬(`common.REVIEWS_ENABLED = True`). 처음 한 번은 PC에서 `review_summary.py --all`로 채움.

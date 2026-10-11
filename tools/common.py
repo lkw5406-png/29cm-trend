@@ -45,9 +45,9 @@ MID_ORDER = ["상의", "니트웨어", "아우터", "바지", "하의", "스커�
 #   → 05:3x 재시도: 첫 요청은 성공, 10초 뒤 두 번째 요청에서 다시 403. 속도 문제가 아님 → bff-api는 다시 쓰지 말 것.
 #   → 같은 날 사장님 결정: 위장하지 않고, robots.txt가 허용한 상품 페이지(www.29cm.co.kr/products/번호)에서 같은 정보를 읽음
 #     (10초 간격·하루 100개). 한 번이라도 거부되면 False로 바꾸고 보고.
-#   후기(review-api)는 거부된 적 없지만 같은 회사라 보류.
+#   후기(review-api)는 거부된 적 없음 → 2026-10-11 낮 사장님 결정으로 켬 (종류별 TOP 30, 2초 간격). 거부되면 False로 바꾸고 보고.
 DETAILS_ENABLED = True
-REVIEWS_ENABLED = False
+REVIEWS_ENABLED = True
 
 IMAGE_BASE = "https://img.29cm.co.kr"          # 랭킹·상세의 imageUrl('/item/2026xx/….jpg') 앞에 붙임
 PRODUCT_URL = "https://www.29cm.co.kr/products/{id}"
