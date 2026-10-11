@@ -7,10 +7,15 @@
 - 예전에 같은 상품을 조사한 적이 있으면 --next 목록에 그 원인을 같이 보여 줌 (다시 확인해서 쓰면 됨).
 
 조사 결과 파일 형식(.tmp/rise_batch.json):
-  {"상품번호": {"causes": ["셀럽·인플루언서 착용"], "summary": "…한 줄 원인…", "reason": "…무슨 일이 있었고 왜 순위가 올랐는지…",
+  {"상품번호": {"causes": ["셀럽·인플루언서 착용"], "summary": "…한 줄 원인…",
+               "points": ["…핵심 원인 한 줄…", "…근거(언제·어디서·얼마나)…", "…가격·상품 정보…"],
+               "reason": "…무슨 일이 있었고 왜 순위가 올랐는지…",
                "confidence": "확인", "sources": [{"title": "…", "url": "https://…"}]}, ...}
   - causes: CAUSES 안에서 1~3개 (가장 큰 원인 먼저)
   - summary: 오늘 요약에 들어갈 한 줄 원인 (30자 이내, 구체적으로 — 예: '패션플래닛 협업 · 9/25 코디 영상')
+  - points: 리포트 '시장 동향'에 보이는 짧은 항목 2~5개 (한 항목 90자 이내, 한 항목에 사실 하나. 긴 문단 말고 '-' 항목으로)
+            순서 = 핵심 원인 → 근거(언제·어디서·조회수) → 보조 요인(날씨·동반 상승) → 가격·상품 정보. reason의 내용 안에서만.
+  - reason: 조사 내용 전체 (리포트에선 '조사 내용 전체 보기'로 접혀 있음)
   - confidence: "확인"(출처로 원인이 직접 확인됨) / "추정"(정황상 가장 그럴듯함 — 설명에 근거를 적을 것)
   - sources: 실제로 열어 본 페이지만. 확인이면 1개 이상 필수. 데이터 단서만으로 쓴 원인은 [] 가능(추정일 때만)
 
@@ -43,6 +48,8 @@ CAUSES = [
 ]
 CONFIDENCE = ("확인", "추정")
 SUMMARY_MAX = 30  # 오늘 요약에 들어갈 한 줄 원인
+POINT_MAX = 90    # 시장 동향 항목 하나의 글자 수
+POINTS_RANGE = (2, 5)
 
 
 def load_reasons() -> dict:
@@ -116,6 +123,11 @@ def validate(batch: dict, allowed: set[str]) -> list[str]:
             errs.append(f"{pid}: causes는 다음 중 1~3개 — {', '.join(CAUSES)}")
         if not isinstance(r.get("summary"), str) or not 5 <= len(r["summary"].strip()) <= SUMMARY_MAX:
             errs.append(f"{pid}: summary(오늘 요약용 한 줄 원인)가 없거나 {SUMMARY_MAX}자를 넘음")
+        pts = r.get("points")
+        if (not isinstance(pts, list) or not POINTS_RANGE[0] <= len(pts) <= POINTS_RANGE[1]
+                or any(not isinstance(x, str) or not 5 <= len(x.strip()) <= POINT_MAX for x in pts)):
+            errs.append(f"{pid}: points(시장 동향에 보일 짧은 항목)는 {POINTS_RANGE[0]}~{POINTS_RANGE[1]}개, "
+                        f"항목마다 {POINT_MAX}자 이내 — 핵심 원인 → 근거 → 보조 요인 → 가격·상품 정보 순")
         if not isinstance(r.get("reason"), str) or len(r["reason"].strip()) < 30:
             errs.append(f"{pid}: reason(설명)이 없거나 너무 짧음 — 무슨 일이 있었고 왜 올랐는지 30자 이상")
         if r.get("confidence") not in CONFIDENCE:
@@ -148,7 +160,8 @@ def main() -> int:
         reasons = load_reasons()
         day = reasons.setdefault(key(args.date, args.period), {})
         for pid, r in batch.items():
-            day[pid] = {"causes": r["causes"], "summary": r["summary"].strip(), "reason": r["reason"].strip(),
+            day[pid] = {"causes": r["causes"], "summary": r["summary"].strip(),
+                        "points": [x.strip() for x in r["points"]], "reason": r["reason"].strip(),
                         "confidence": r["confidence"],
                         "sources": [{"title": s["title"].strip(), "url": s["url"].strip()} for s in r.get("sources", [])],
                         "checked": today_kst()}

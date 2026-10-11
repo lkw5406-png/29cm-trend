@@ -94,7 +94,8 @@
   1. `python3 tools/rise_reasons.py --check` → 오늘 리포트 기간별 조사할 개수 (일간 매일, 주간 월요일, 월간 1일)
   2. `python3 tools/rise_reasons.py --next --period daily` → `.tmp/rise_queue.json` + 상품별 **데이터 단서**(가격·할인율 변화, 사진을 올린 달, 같은 브랜드 동반 상승, 좋아요·후기 수)
   3. 상품마다 조사(아래 '조사 방법') → `.tmp/rise_batch.json` 작성
-     `{"상품번호": {"causes": ["유튜브·SNS 콘텐츠"], "summary": "…", "confidence": "확인", "reason": "…", "sources": [{"title": "…", "url": "https://…"}]}}`
+     `{"상품번호": {"causes": ["유튜브·SNS 콘텐츠"], "summary": "…", "points": ["핵심 원인", "근거(언제·어디서·얼마나)", "가격·상품 정보"], "confidence": "확인", "reason": "…", "sources": [{"title": "…", "url": "https://…"}]}}`
+     - `points` = '시장 동향'에 보이는 짧은 항목 2~5개(항목마다 90자 이내, 한 항목에 사실 하나). 순서: 핵심 원인 → 근거 → 보조 요인 → 가격·상품 정보. `reason`(조사 내용 전체)은 화면에서 접혀 있음.
   4. `python3 tools/rise_reasons.py --merge .tmp/rise_batch.json --period daily` (형식이 틀리면 거부 → 고쳐서 다시)
   5. 주간·월간 리포트 날이면 `--period weekly` / `monthly`로 2~4 반복
 - 원인 종류(`causes`, 1~3개, 큰 것 먼저): 셀럽·인플루언서 착용 / 유튜브·SNS 콘텐츠 / 신상품·리뉴얼 출시 / 협업·한정판 / 할인·프로모션 / 29CM 노출 / 브랜드 화제 / 시즌·날씨
@@ -153,3 +154,4 @@
 - 2026-10-11 낮: GitHub 서버에서도 랭킹 수집·상세정보(상품 페이지) 모두 거부 없이 됨(06:25 본 실행, 12:25 재확인, 매시 관찰 7번 성공). 상세정보 221개까지 거부 0번 → 사장님 결정으로 하루 100개 한도를 없앰(`product_details.DAILY_LIMIT = 0`, 간격 10초 유지). GitHub 예약 실행은 15분쯤 늦게 시작함(06:10 예약 → 06:25).
 - 2026-10-11 낮: 사장님 결정으로 후기 요약을 켬(`common.REVIEWS_ENABLED = True`). 처음 한 번은 PC에서 `review_summary.py --all`로 채움.
 - 2026-10-11 14시 루틴 첫 실행: 사진 받기·판독 150개는 됐지만 **저장(push)이 403** — Claude GitHub 앱이 새 저장소 29cm-trend에 권한이 없었음(읽기만 됨). 사장님이 https://github.com/apps/claude/installations/select_target 에서 29cm-trend를 추가해야 함. 새 저장소를 만들면 Claude 앱 권한도 같이 줄 것.
+- 2026-10-11 저녁: 사장님 지시로 화면(UX/UI)을 무신사 리포트의 같은 날 개편(번호 구역·사진 카드 요약, 소제목 알약 라벨, 밝은 화면 대비, 원인 항목화)과 똑같이 맞춤. 방법: 무신사 `tools/build_report.py` 최신본에 29CM용 문구·순위 표기·사진 주소만 바꿔 입힘(`.tmp/port_report.py`에 바꾼 곳 목록). 무신사 쪽 화면이 또 바뀌면 같은 방식으로 다시 가져올 것. 급상승 원인에 `points` 칸이 필수가 됨.
