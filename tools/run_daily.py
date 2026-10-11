@@ -90,7 +90,7 @@ def run(date: str, skip_fetch: bool, only_missing: bool, extra_reports: list[str
         else:
             print("2/4 상세정보 수집 — 꺼져 있음 (common.DETAILS_ENABLED)")
         if REVIEWS_ENABLED:
-            print("2-2/4 후기 요약 (리포트 만드는 기간의 종류별 인기 TOP 30, 7일에 한 번)")
+            print("2-2/4 후기 요약 (리포트 만드는 기간의 종류별 인기 TOP 50, 7일에 한 번)")
             review_summary.update_summaries(date, periods=tuple(periods))
         else:
             print("2-2/4 후기 요약 — 꺼져 있음 (common.REVIEWS_ENABLED)")

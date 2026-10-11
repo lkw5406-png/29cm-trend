@@ -39,7 +39,7 @@
 |---|---|---|
 | 1. 랭킹 수집 (기간마다 요청 12번) | `tools/twentynine_fetch.py --period` | 일간 `data/history/`, 주간 `data/history_weekly/`, 월간 `data/history_monthly/` 아래 `YYYY-MM-DD.csv` |
 | 2. 상세정보 (상품 페이지에서, 10초 간격·새 상품 전부) | `tools/product_details.py` | `data/product_details.json` |
-| 2-2. 후기 요약 (종류별 인기 TOP 30, 7일에 한 번, 하루 최대 120개) | `tools/review_summary.py` | `data/review_summaries.json` |
+| 2-2. 후기 요약 (종류별 인기 TOP 50, 7일에 한 번, 하루 최대 120개) | `tools/review_summary.py` | `data/review_summaries.json` |
 | 3. 분석 | `tools/analyze_trends.py --period` (분류: `tools/classify_attributes.py` + `tools/attribute_keywords.json`) | `.tmp/analysis_YYYY-MM-DD.json` |
 | 3-2. 순위 급상승 원인 (Claude 조사) | `tools/rise_reasons.py` + `tools/web_research.py` | `data/rise_reasons.json` |
 | 4. 리포트 | `tools/build_report.py --period` | `docs/`(일간), `docs/weekly/`, `docs/monthly/` |
@@ -66,7 +66,7 @@
 - '전체 순위(신발·가방 포함)'가 없음 → 카드에는 '종류 N위 · 전체 N위(의류 전체 TOP 100 안일 때)'.
 - 인기 TOP 버튼은 29CM 종류 그대로(상의·니트웨어·아우터·바지·스커트·원피스). 디자인 참고·가격은 대분류(상의/아우터/바지/원피스·스커트).
 - 아이템 종류 이름은 29CM 소분류를 무신사 리포트 이름으로 맞춤(`product_details.ITEM_TYPES`). 니트는 넥라인별로 남김(크루넥 니트·브이넥 니트 …).
-- 후기 요약 대상은 종류별 TOP 30(약 300개. 종류가 10개라 50개씩이면 요청이 두 배).
+- 후기 요약 대상은 종류별 TOP 50(약 500개). 처음엔 30으로 잡았다가 2026-10-11 사장님 결정으로 무신사 리포트와 같은 50으로 올림.
 - 사진은 화면용으로 줄인 주소(`?width=400`), 판독용은 `?width=600`.
 
 ## 사진 판독 (매일 자동, Claude 루틴)

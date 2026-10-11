@@ -1,4 +1,4 @@
-"""후기 요약 Tool — 종류별 인기 TOP 30 상품의 후기를 모아 좋은 점·아쉬운 점을 정리한다.
+"""후기 요약 Tool — 종류별 인기 TOP 50 상품의 후기를 모아 좋은 점·아쉬운 점을 정리한다.
 
 29CM 후기 목록(review-api.29cm.co.kr)에서 상품마다
 - 베스트순 후기 50개 → 좋은 점(4~5점 후기)
@@ -31,7 +31,7 @@ SUMMARY_PATH = ROOT / "data" / "review_summaries.json"
 LOCK_PATH = TMP_DIR / "review_summary.lock"
 CACHE_DIR = TMP_DIR / "reviews"
 REQUEST_INTERVAL_SEC = 2
-TOP_N = 30            # 종류별 인기 TOP 30. 29CM은 종류가 성별 합쳐 10개라 30개씩이면 약 300개 (무신사 리포트 280개와 비슷한 요청량)
+TOP_N = 50            # 종류별 인기 TOP 50 (2026-10-11 사장님 결정: 30 → 50, 무신사 리포트와 같게). 종류가 성별 합쳐 10개라 약 500개
 MAX_PER_RUN = 120     # 매일 자동 실행 한 번에 정리할 최대 상품 수 (상품당 30~40초 → 약 1시간, 실행 시간 제한 대비)
 REVIEWS_EACH = 50     # 도움순 50개 + 낮은 별점 50개 (2026-09-25 사장님 결정: 20개는 적다)
 BAD_MAX_GRADE = 3     # 3점 이하를 아쉬운 후기로 봄
