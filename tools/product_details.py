@@ -33,7 +33,8 @@ PAGE_REF = re.compile(r"\$[0-9a-f]+")  # 다른 줄을 가리키는 표시 ("$45
 COLOR_OPTION_NAMES = {"c", "color", "colour", "colors", "컬러", "색상", "색깔", "칼라"}
 # 2026-10-11: 2초 간격으로 받다가 20개째에서 403 → 사장님 결정으로 훨씬 느리게(10초 간격, 하루 100개) 한 번 더 시도
 REQUEST_INTERVAL_SEC = 10
-DAILY_LIMIT = 100       # 하루에 새로 받는 상품 수 (run_daily가 세 기간을 합쳐 이만큼만)
+# 2026-10-11 낮 사장님 결정: 상품 페이지 방식이 221개까지 거부 없이 받아져서 하루 한도를 없앰 (간격 10초는 유지)
+DAILY_LIMIT = 0         # 하루에 새로 받는 상품 수. 0 = 제한 없음 (새 상품 전부)
 SAVE_EVERY = 25
 DESC_CHARS = 1500
 CLOTHING_CODES = {"001", "002", "003", "100"}  # 상의, 아우터, 바지, 원피스/스커트 (common.CLOTHING_CATEGORIES)

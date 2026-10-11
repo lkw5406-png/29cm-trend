@@ -81,9 +81,11 @@ def run(date: str, skip_fetch: bool, only_missing: bool, extra_reports: list[str
     try:
         if DETAILS_ENABLED:
             print("2/4 상세정보 수집 (처음 보는 상품만)")
-            budget = product_details.DAILY_LIMIT  # 세 기간을 합쳐 하루 한도만큼만
+            budget = product_details.DAILY_LIMIT  # 세 기간을 합친 하루 한도 (0 = 제한 없음)
             for period in collected:
-                if budget > 0:
+                if not product_details.DAILY_LIMIT:
+                    product_details.update_details(date, period=period)
+                elif budget > 0:
                     budget -= product_details.update_details(date, limit=budget, period=period)
         else:
             print("2/4 상세정보 수집 — 꺼져 있음 (common.DETAILS_ENABLED)")

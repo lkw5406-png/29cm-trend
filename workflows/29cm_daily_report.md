@@ -38,7 +38,7 @@
 | 단계 | Tool | 결과물 |
 |---|---|---|
 | 1. 랭킹 수집 (기간마다 요청 12번) | `tools/twentynine_fetch.py --period` | 일간 `data/history/`, 주간 `data/history_weekly/`, 월간 `data/history_monthly/` 아래 `YYYY-MM-DD.csv` |
-| 2. 상세정보 (상품 페이지에서, 10초 간격·하루 100개) | `tools/product_details.py` | `data/product_details.json` |
+| 2. 상세정보 (상품 페이지에서, 10초 간격·새 상품 전부) | `tools/product_details.py` | `data/product_details.json` |
 | 2-2. 후기 요약 (**지금 꺼져 있음**) | `tools/review_summary.py` | `data/review_summaries.json` |
 | 3. 분석 | `tools/analyze_trends.py --period` (분류: `tools/classify_attributes.py` + `tools/attribute_keywords.json`) | `.tmp/analysis_YYYY-MM-DD.json` |
 | 3-2. 순위 급상승 원인 (Claude 조사) | `tools/rise_reasons.py` + `tools/web_research.py` | `data/rise_reasons.json` |
@@ -113,3 +113,4 @@
 - 2026-10-11: **실수 기록** — 무신사 도구를 복사한 직후, 새 파일 저장이 실패한 걸 모르고 `twentynine_fetch.py`를 실행해 복사본(무신사용 코드)이 5분쯤 돎(무신사에 상세 요청 수십 건, 거부 없음. 바로 멈추고 생긴 파일 삭제). 복사해서 고칠 때는 **실행 전에 `grep musinsa tools/`로 남은 주소가 없는지 확인**.
 - 2026-10-11: 윈도우 Git Bash의 `<<'EOF'` 안에 따옴표가 섞인 긴 파이썬 코드를 넣으면 깨짐 → 수정 스크립트는 파일로 써서 실행(무신사 매뉴얼에도 같은 메모).
 - 2026-10-11: Edge 헤드리스 캡처에서 사진 일부가 깨진 그림으로 찍힘 — 같은 주소를 직접 받으면 200(정상). 캡처가 사진을 다 받기 전에 찍힌 것. 화면 구성 확인용으로만 볼 것.
+- 2026-10-11 낮: GitHub 서버에서도 랭킹 수집·상세정보(상품 페이지) 모두 거부 없이 됨(06:25 본 실행, 12:25 재확인, 매시 관찰 7번 성공). 상세정보 221개까지 거부 0번 → 사장님 결정으로 하루 100개 한도를 없앰(`product_details.DAILY_LIMIT = 0`, 간격 10초 유지). GitHub 예약 실행은 15분쯤 늦게 시작함(06:10 예약 → 06:25).

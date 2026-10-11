@@ -20,7 +20,7 @@ concurrency:
 jobs:
   report:
     runs-on: ubuntu-latest
-    timeout-minutes: 120   # 랭킹만이면 10분 안쪽. 상세정보·후기를 켰을 때 대비
+    timeout-minutes: 300   # 랭킹만이면 10분 안쪽. 상세정보는 새 상품 1개에 10초 (1,000개면 약 3시간)
     # 실패 알림: 이 작업이 실패하면 GitHub이 저장소 주인 계정 이메일로 자동 알림을 보냄 (별도 메일 설정 없음)
     steps:
       - uses: actions/checkout@v4
