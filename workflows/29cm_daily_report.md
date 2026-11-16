@@ -76,7 +76,7 @@
 - 순서:
   1. `git pull --rebase`
   2. `python3 tools/photo_queue.py --check` → 오늘 남은 개수
-  3. `python3 tools/photo_queue.py --next --size 27` → `.tmp/photo_queue.json` + 9장씩 묶은 판독용 이미지 `.tmp/photo_sheet_N.jpg` (Pillow 필요: 클라우드는 `python3 -m pip install pillow`, PC는 `uv run --with pillow python …`. 없으면 `.tmp/photos/`의 사진을 하나씩 봄)
+  3. `python3 tools/photo_queue.py --next --size 27` → `.tmp/photo_queue.json` + 9장씩 묶은 판독용 이미지 `.tmp/photo_sheet_N.jpg` (Pillow 필요: 클라우드는 `python3 -m pip install --ignore-installed pillow`, PC는 `uv run --with pillow python …`. 없으면 `.tmp/photos/`의 사진을 하나씩 봄)
   4. 사진을 보고 `.tmp/photo_batchN.json` 작성 `{"상품번호": {"detail": ["포켓/유틸리티"], "fit": ["루즈"]}}` — **빈 칸(blanks)으로 나온 그룹만**, 이름은 `tools/attribute_keywords.json` 이름표만.
      - 핏·실루엣·디테일·컬러·원단은 파악률 100%를 위해 **반드시 하나는 고름**. 디테일이 없으면 `무지/베이직`, 상의·아우터 기장이 평범하면 `레귤러 기장`(짧으면 `크롭`, 하프 코트는 `미디 기장`).
      - **소재(fiber)는 `[]`** — 사진으로는 섬유를 알 수 없어 추정하지 않음(2026-10-11 사장님과 정리: 소재는 상품 페이지의 '제품 소재'로만 채움). `[]`는 '봤지만 모름'으로 기록돼 다시 고르지 않고, 나중에 상세정보가 들어오면 그 값이 우선.
@@ -186,3 +186,4 @@
 - 2026-11-13 루틴: 사진 149개 전부 판독(남은 것 0). 일간 급상승 20개 = **11/12 포 유어 아이즈 온리 원브랜드데이(~10+29%, 여성 19→52개)·무브웜 29LIVE(2→28개, 0→5~10%)·남성 브라운야드 원브랜드데이(18→60개)** + 하루 밀림 회복. **남성 원브랜드데이는 상품명 앞 `[원브랜드데이]` 표시로 알 수 있음**(브라운야드 24SS 티셔츠 4종, 11/12 수집부터) — 순위표 할인율은 그대로(쿠폰형)라 할인율 비교만으로는 안 보이니 `grep 원브랜드데이 data/history/날짜.csv`부터 볼 것. 발매표 채널(UC1qGXawx_encxbjpe2ORsEg)이 원브랜드데이 전날 안내 영상을 올림(`channel`로 조회). 확인 0개. 유튜브 API 한도 초과 없음.
 - 2026-11-14 루틴: 사진 120개 전부 판독(남은 것 0). 일간 급상승 20개 = **11/13 더바넷 원브랜드데이(~50+30%, 여성 순위표 5→43개)·아르토 29LIVE(11/13 바치·아르토, 5→31개)·몽돌 11/13 저녁 유튜브 2편(염차·주황, 22→35개)** + 남성은 11/13 순위표(아웃스탠딩 77개·브라운야드 55개 몰림)에서 밀렸다 돌아온 것(브론슨은 19→36% 할인 재개). 29LIVE 날짜별 브랜드는 `https://www.29cm.co.kr/content/campaign/2026/11/29-week/29-live`를 WebFetch하면 바로 나옴. 유튜브 영상 페이지 WebFetch는 구글 'sorry' 페이지로 막힘 → 설명란은 `web_research.py video`로만. 확인 2개(몽돌). 유튜브 API 한도 초과 없음.
 - 2026-11-15 루틴: 클라우드의 시스템 Pillow(10.2.0)가 깨져 있어(`_imaging` 없음) `pip install pillow`는 '이미 있음'으로 끝나고 묶음 이미지가 안 만들어짐 → `python3 -m pip install --user --ignore-installed pillow`로 다시 깔면 됨. 같은 날 급상승 20개 중 약 10개가 11/14 하루 밀렸다 돌아온 것(더바넷 50개·아르토 32개 진입), 나머지는 브랜드 단위 몰림(시야쥬 17→35개·파르티멘토 4→34개·비터셀즈 8→37개).
+- 2026-11-16 루틴: 클라우드에서 `pip install pillow`가 "이미 설치됨"이라 했지만 시스템 Pillow가 깨져 있어(`_imaging` 없음) 묶음 이미지가 안 만들어짐 → `python3 -m pip install --ignore-installed pillow`로 새로 깔면 됨. 이구위크(11/9~19) 기간엔 29LIVE 일정(`/content/campaign/2026/11/29-week/29-live`)에 날짜별 방송 브랜드가 나옴 — 다음 날 순위표에 그 브랜드가 수십 개 몰리면(르바 11/15 방송 → 4개→31개) 먼저 이 일정과 맞춰 볼 것.
